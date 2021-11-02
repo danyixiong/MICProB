@@ -4,36 +4,20 @@
 getHyperPars <- function(tidydata){
   D = tidydata$nfeature_inst
   res = list(
-    #hp_mu_beta=c(mean(tidydata$label),rep(0,D)),
-    #hp_mu_b=c(mean(tidydata$label),rep(0,D)),
-
     hp_mu_beta=rep(0, D + 1),
     hp_mu_b=rep(0,D + 1),
     
-    #hp_Sig_beta=diag(D+1)/(D+1),
-    #hp_Sig_b=diag(D+1)/(D+1)
-    
-    hp_Sig_beta = diag(10,D+1), 
-    hp_Sig_b = diag(10,D+1)
-    
-    # for real data
-    #hp_Sig_beta = diag(c(16,rep(4,D)),D+1), 
-    #hp_Sig_b = diag(c(16,rep(4,D)),D+1)
+    hp_Sig_beta = diag(c(16,rep(4,D)),D+1), 
+    hp_Sig_b = diag(c(16,rep(4,D)),D+1)
   )
   return(res)
 }
 
 #### Get initial values ####
 getInits <- function(tidydata,hyperpars){
-  #beta = unlist(lapply(hyperpars$hp_mu_beta, function(mu_beta) rnorm(1, mu_beta, 10)))
-  #b = unlist(lapply(hyperpars$hp_mu_b, function(mu_b) rnorm(1, mu_b, 10)))
-  #delta = unlist(lapply(1:tidydata$nsample,function(i){rbinom(tidydata$ninst[i],1,mean(tidydata$label))}))
-  
-  ## use true parameter values
-  beta = beta_true
-  b = b_true
-  delta = unlist(delta_true)
-  #cat("Using true initials!\n")
+  beta = unlist(lapply(hyperpars$hp_mu_beta, function(mu_beta) rnorm(1, mu_beta, 10)))
+  b = unlist(lapply(hyperpars$hp_mu_b, function(mu_b) rnorm(1, mu_b, 10)))
+  delta = unlist(lapply(1:tidydata$nsample,function(i){rbinom(tidydata$ninst[i],1,mean(tidydata$label))}))
   
   res = list(
     beta = beta,
@@ -83,13 +67,6 @@ MICProB_sampler<-function(tidytrain,
                         nchain,
                         #scale,
                         return_delta){
-  # tidytrain=tidy_train
-  # tidytest=tidy_train
-  # ntotal=1000
-  # nwarm=500
-  # nthin=10
-  # scale=F
-  # return_delta=T
   
   cat("=============================================================\n")
   cat(sprintf("Probit Bayesian Multiple Instance Classification\n"))
@@ -102,14 +79,6 @@ MICProB_sampler<-function(tidytrain,
     start_time <- Sys.time()
     
     parlist <- getInputPars(tidytrain)
-    
-    # whether to scale the covariate matrix
-    # if(scale){
-    #   X1<-cbind(1,scale(parlist$X1[,-1]))
-    #   #X1<-cbind(1,scale(parlist$X1[,-c(1,7)]), parlist$X1[,7]) # mute_type is categorical
-    # } else{
-    #   X1<-parlist$X1
-    # }
     
     y<-parlist$y
     n<-parlist$n
@@ -168,10 +137,7 @@ MICProB_sampler<-function(tidytrain,
                                       hp_Sig_beta_inv,
                                       hp_Sig_b_inv,
                                       V_b)
-      # mcmc_res<-BMIR2_1Gibbs(X1,y,n,d,m,N,membership
-      #                        ,hp_mu_beta,hp_mu_b,hp_Sig_beta,hp_Sig_b
-      #                        ,beta,b,delta,u,z
-      #                        ,hp_Sig_beta_inv,hp_Sig_b_inv,V_b)
+
       # update parameters
       beta = mcmc_res$beta
       b = mcmc_res$b
@@ -225,49 +191,13 @@ MICProB_sampler<-function(tidytrain,
                                       hp_Sig_beta_inv,
                                       hp_Sig_b_inv,
                                       V_b)
-      # mcmc_res<-BMIR2_1Gibbs(X1,y,n,d,m,N,membership
-      #                        ,hp_mu_beta,hp_mu_b,hp_Sig_beta,hp_Sig_b
-      #                        ,beta,b,delta,u,z
-      #                        ,hp_Sig_beta_inv,hp_Sig_b_inv,V_b)
+
       # update parmaeters
       beta = mcmc_res$beta
       b = mcmc_res$b
       delta = mcmc_res$delta
       u = mcmc_res$u
       z = mcmc_res$z
-    
-      # prediction for new bags
-      #pred_res = Predict_cpp(X_test,ninst_test,beta,b)
-      
-      # prime_prob<-pnorm(b[1] + X_test%*%b[-1])
-      # delta_samps<-replicate(50,rbinom(nrow(X_test),1,prime_prob))
-      # 
-      # X_test_delta<-matrix(NA,n_test,d)
-      # mu_z<-rep(NA,n_test)
-      # bag_prob<-matrix(NA,n_test,dim(delta_samps)[2])
-      # 
-      # for(k in 1:dim(delta_samps)[2]){
-      #   for(i in 1:n_test){
-      #     delta_test_i<-delta_samps[membership_test==i,k]
-      #     X_test_i<-X_test[membership_test==i,,drop=F]
-      #     
-      #     if(sum(delta_test_i)==0){
-      #       X_test_delta[i,]<-rep(0,d)
-      #     } else{
-      #       # sum model
-      #       X_test_delta[i,]<-colSums(X_test_i[delta_test_i==1,,drop=F])
-      #       # average model
-      #       #X_test_delta[i,]<-colSums(X_test_i[delta_test_i==1,,drop=F])/sum(delta_test_i)
-      #     }
-      #     mu_z[i]<-beta[1] + X_test_delta[i,] %*% beta[-1]
-      #     
-      #     #cat("k=",k," i=",i,"\n")
-      #   }
-      #   bag_prob[,k]<-pnorm(mu_z)
-      # }
-      
-      #y_pred_prob[iter,]<-pred_res$y_pred_prob
-      #delta_pred_prob[iter,]<-pred_res$delta_pred_prob
       
       # save posterior samples and predicted bag probs
       if(iter %in% seq(nthin,niter,by=nthin)){ # thinning delta
